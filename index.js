@@ -1,38 +1,46 @@
 import express from "express";
-import { exec } from "child_process";
-import fs from "fs";
+import { spawn } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
-// --- MAIN ENDPOINT ---
-app.post("/run", async (req, res) => {
+app.use(express.json());
+
+// ✅ Serve static frontend
+app.use(express.static(path.join(__dirname, "public")));
+
+// ✅ Run Gola code endpoint
+app.post("/run", (req, res) => {
   const code = req.body.code;
   if (!code) return res.status(400).json({ error: "No code provided" });
 
-  const tempFile = path.join("/tmp", "temp.gola");
-  fs.writeFileSync(tempFile, code);
+  const gola = spawn("./gola");
 
-  exec(`./gola ${tempFile}`, (error, stdout, stderr) => {
-    if (error) return res.status(500).json({ error: stderr || error.message });
-    res.json({ output: stdout });
+  let output = "";
+  gola.stdout.on("data", (data) => {
+    output += data.toString();
   });
+
+  gola.stderr.on("data", (data) => {
+    output += data.toString();
+  });
+
+  gola.on("close", () => {
+    res.json({ output });
+  });
+
+  gola.stdin.write(code + "\n");
+  gola.stdin.end();
 });
 
-// --- Health route ---
-app.get("/", (req, res) => {
-  res.send("✅ Gola playground is alive!");
-});
-
-// --- Keep-alive ping every 10 min (600 000 ms) ---
-const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+// ✅ Keep alive (to prevent Render sleep)
 setInterval(() => {
-  console.log("Pinging self to keep Render awake…");
-  fetch(SELF_URL).catch(() => {}); // ignore errors
-}, 600_000); // 10 minutes
+  console.log("Pinged to stay alive");
+}, 10 * 60 * 1000); // every 10 mins
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
