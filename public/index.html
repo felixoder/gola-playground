@@ -114,8 +114,8 @@
     }
 
     .playground-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 20px;
       min-height: 400px;
     }
@@ -380,7 +380,6 @@
       }
       
       .playground-content {
-        grid-template-columns: 1fr;
         gap: 15px;
       }
       
@@ -441,9 +440,7 @@
               id="code" 
               class="code-editor"
               placeholder="kemon achis &quot;Hello, Gola!&quot;"
-            >bol bhai x
-y = x + 5
-dyakh jodi y > 10: kemon achis "Value is greater" ar nahole: kemon achis "Value is smaller"</textarea>
+            >kemon achis "hello world"</textarea>
           </div>
           
           <div class="output-container">
